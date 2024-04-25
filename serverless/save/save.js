@@ -43,6 +43,13 @@ async function main(params) {
             if (params.error) {
                 doc.error = params.error;
             }
+            const body = JSON.stringify(doc);
+            if(body.length > 100000) {
+                return {
+                    statusCode: 400,
+                    body: {error: 'Document too large'}
+                };
+            }
             const cloudant_url = `https://${process.env.CLOUDANT_WRITE_HOST}/exerciser/${doc._id}`;
             const auth = Buffer.from(process.env.CLOUDANT_WRITE_USERNAME + ':' + process.env.CLOUDANT_WRITE_PASSWORD, "binary").toString("base64");
             var headers = {
@@ -52,7 +59,7 @@ async function main(params) {
             const response = await fetch(cloudant_url, {
                 method: 'put',
                 headers: headers,
-                body: JSON.stringify(doc)
+                body: body
             });
             if (response.ok === true) {
                 const cloudant_body = await response.json();
@@ -67,11 +74,14 @@ async function main(params) {
                 return {
                     statusCode: response.status,
                     body: {error: await response.text()}
-                }
+                };
             }
         } else {
             // failed the reCaptcha challenge
-            return { statusCode: 400, body: 'Failed the robot challenge!' };
+            return { 
+                statusCode: 400, 
+                body: {error: 'Failed the robot challenge!'}
+            };
         }
     } catch (error) {
         return {
