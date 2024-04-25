@@ -442,7 +442,7 @@ class Exerciser extends React.Component {
         });
     }
 
-    save(resp) {
+    async save(resp) {
         // post the input data and jsonata
         let input;
         try {
@@ -465,24 +465,33 @@ class Exerciser extends React.Component {
         console.log("save:", body);
         const url = 'https://save.1g5lolddjght.us-east.codeengine.appdomain.cloud';
 
-        fetch(url, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify(body)
-        })
-            .then(res => res.json())
-            .then(
-                response => {
-                    console.log(response);
-                    const location = "https://try.jsonata.org/" + response.id;
-                    const msg = 'Share this link: <a href="' + location + '">' + location + '</a>';
-                    document.getElementById("share-msg").innerHTML = msg;
-                    document.getElementById("share-title").innerHTML = 'Expression saved!';
-                    document.getElementsByClassName("verify")[0].style.display = 'none';
-                    //document.getElementsByClassName("verify")[1].style.display = 'none';
-                }).catch(error => console.error(error));
+        try {
+            const resp = await fetch(url, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(body)
+            });
+            console.log(resp);
+            const response = await resp.json();
+            if (resp.status == 201) {
+                const location = "https://try.jsonata.org/" + response.id;
+                const msg = 'Share this link: <a href="' + location + '">' + location + '</a>';
+                document.getElementById("share-msg").innerHTML = msg;
+                document.getElementById("share-title").innerHTML = 'Expression saved!';
+                document.getElementsByClassName("verify")[0].style.display = 'none';
+                document.getElementById("share-form").style.display = 'none';
+            } else {
+                throw Error(response.error);
+            }
+        } catch (error) {
+            console.error(error);
+            document.getElementById("share-title").innerHTML = 'Error';
+            document.getElementById("share-msg").innerHTML = error.message;
+            document.getElementsByClassName("verify")[0].style.display = 'none';
+            document.getElementById("share-form").style.display = 'none';
+        }
     }
 
     slack(resp) {
@@ -629,7 +638,7 @@ class Exerciser extends React.Component {
                     <h2 id="share-title">Save expression</h2>
                     <p id="share-msg">Save and share your JSONata expression.</p>
                     <p className="verify">Please check the box below to get a URL to your saved expression...</p>
-                    <form onSubmit={this.onSubmit} >
+                    <form id="share-form" onSubmit={this.onSubmit} >
                         <ReCAPTCHA
                             ref={recaptchaRef}
                             sitekey="6LdOEBkUAAAAAB0ADgy0xeUOtVWfSjj3cuhPFqbt"
